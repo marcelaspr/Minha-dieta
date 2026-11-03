@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diário alimentar editável</title>
+<style>
+body{margin:0;background:#f4f7f5;color:#20332c;font:15px system-ui}header{background:#173e35;color:white;padding:22px}main{max-width:760px;margin:auto;padding:15px}.card{background:white;border:1px solid #dce6df;border-radius:15px;padding:15px;margin:12px 0}h1{font-size:23px;margin:0}h2{font-size:17px;margin:0 0 12px}.muted,small{color:#68776f}.row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}input,select,button{font:inherit;padding:9px;border:1px solid #dce6df;border-radius:9px}button{background:#173e35;color:white;border:0;font-weight:650}button.light{background:#e7f1eb;color:#173e35}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.metric{background:#e7f1eb;border-radius:10px;padding:10px}.metric b{display:block;font-size:20px}.meal{border-top:1px solid #e2e9e4;padding:12px 0}.food{display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px 0;border-top:1px dashed #e2e9e4}.food input{width:65px;text-align:right}.add{display:grid;grid-template-columns:1fr 75px auto;gap:6px;margin-top:8px}.add select{min-width:0}.form{display:grid;grid-template-columns:1fr 1fr;gap:8px}.form input,.form select{width:100%;box-sizing:border-box}.result{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #eee}.note{font-size:12px;color:#68776f;line-height:1.5}@media(max-width:440px){.card{padding:12px}.metrics{gap:5px}.metric b{font-size:17px}}
+</style>
+<header><h1>Diário alimentar</h1><div style="color:#d7e6df;font-size:13px">Plano flexível · registre o que realmente comeu</div></header>
+<main>
+<section class="card">
+ <div class="row"><div><small>Dia do registro</small><div id="date" style="font-weight:700"></div></div><div><button class="light" id="prev">‹</button> <button class="light" id="today">Hoje</button> <button class="light" id="next">›</button></div></div>
+ <div class="metrics" style="margin-top:13px"><div class="metric"><b id="kcal">0</b><small>kcal</small></div><div class="metric"><b id="protein">0 g</b><small>proteína</small></div><div class="metric"><b id="carbs">0 g</b><small>carboidratos</small></div></div>
+ <div class="row" style="margin-top:12px"><small>Meta diária</small><b><span id="goal">1950</span> kcal</b></div>
+ <div id="remaining" class="note"></div>
+</section>
+<section class="card">
+ <h2>Adicionar alimento</h2>
+ <label class="note">Buscar no catálogo</label><input id="search" placeholder="Ex.: arroz, banana, ovo, frango..." style="width:100%;box-sizing:border-box">
+ <div id="results"></div>
+ <p class="note">Selecione um alimento para adicioná-lo à refeição. Depois, ajuste os gramas diretamente no registro.</p>
+ <h2 style="margin-top:18px">Cadastrar alimento personalizado</h2>
+ <div class="form">
+ <input id="customName" placeholder="Nome do alimento">
+ <input id="customKcal" type="number" placeholder="Kcal por 100 g">
+ <input id="customP" type="number" step=".1" placeholder="Proteína g/100 g">
+ <input id="customC" type="number" step=".1" placeholder="Carboidrato g/100 g">
+ <input id="customF" type="number" step=".1" placeholder="Gordura g/100 g">
+ <select id="customMeal"></select>
+ </div><button class="light" id="saveCustom" style="margin-top:9px">Salvar e adicionar</button>
+</section>
+<section class="card"><div class="row"><h2>Refeições</h2><button class="light" id="clear">Limpar dia</button></div><div id="meals"></div></section>
+<section class="card">
+ <h2>Metas e peso</h2><div class="row"><label>Meta kcal/dia</label><input id="goalInput" type="number" step="50" style="width:100px"></div>
+ <div class="row" style="margin-top:10px"><label>Peso de hoje (kg)</label><input id="weight" type="number" step=".1" placeholder="kg" style="width:100px"><button id="saveWeight">Salvar</button></div><div id="weights" class="note"></div>
+</section>
+<p class="note">Os valores nutricionais são estimativas por 100 g. Para alimentos industrializados, use os dados do rótulo. O catálogo é local, não é uma busca online como a base completa do MyFitnessPal. Os registros ficam salvos neste navegador/dispositivo.</p>
+</main>
+<script>
+const foods=[
+['Arroz branco cozido',128,2.5,28.1,.2],['Arroz integral cozido',124,2.6,25.8,1],['Feijão carioca cozido',76,4.8,13.6,.5],['Frango grelhado',159,32,0,2.5],['Patinho grelhado',219,35,0,7.5],['Ovo inteiro',143,13,1.1,9.5],['Clara de ovo',52,11,.7,.2],['Pão integral',253,9.4,43,3.5],['Pão francês',300,8,58,3.1],['Banana',89,1.1,22.8,.3],['Mamão',43,.5,10.8,.3],['Maçã',52,.3,13.8,.2],['Morango',32,.7,7.7,.3],['Aveia',389,16.9,66.3,6.9],['Tapioca hidratada',230,.2,57,0],['Queijo minas frescal',264,17.4,3.2,20.2],['Iogurte natural',61,3.5,4.7,3.3],['Iogurte proteico',70,10,5,1],['Batata inglesa cozida',87,1.9,20.1,.1],['Batata-doce cozida',86,1.6,20.1,.1],['Azeite',884,0,0,100],['Abacate',160,2,8.5,14.7],['Pasta de amendoim',588,25,20,50],['Whey protein',400,80,8,6],['Requeijão light',180,10,5,13],['Brócolis cozido',35,2.4,7.2,.4],['Macarrão cozido',158,5.8,30.9,.9],['Salmão grelhado',206,22,0,12],['Tilápia grelhada',128,26,0,2.7],['Chocolate 70%',598,7.8,45.9,42.6],['Mel',304,.3,82.4,0],['Doce de leite',315,5.5,58,6.5],['Castanha de caju',553,18.2,30.2,43.8]
+];
+const meals=['Pré-treino','Café da manhã','Almoço','Lanche','Jantar'];
+const goals=[1950,2200,1950,1950,1950,1950,2200];let offset=0;
+const store=JSON.parse(localStorage.getItem('foodDiaryV3')||'{"days":{},"weights":{}}');
+const pad=x=>String(x).padStart(2,'0');
+function dateObj(){let d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+offset);return d}
+function key(){let d=dateObj();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function data(){let k=key();if(!store.days[k])store.days[k]={items:[],goal:goals[(dateObj().getDay()+6)%7]};return store.days[k]}
+function save(){localStorage.setItem('foodDiaryV3',JSON.stringify(store));render()}
+function safe(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function add(food,meal,grams){data().items.push({name:food[0],k:food[1],p:food[2],c:food[3],f:food[4],meal,g:grams});save()}
+function render(){
+ let d=dateObj(),x=data();document.getElementById('date').textContent=d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
+ let t=x.items.reduce((a,v)=>{a.k+=v.k*v.g/100;a.p+=v.p*v.g/100;a.c+=v.c*v.g/100;return a},{k:0,p:0,c:0});
+ let f=Math.round;document.getElementById('kcal').textContent=f(t.k).toLocaleString('pt-BR');document.getElementById('protein').textContent=f(t.p)+' g';document.getElementById('carbs').textContent=f(t.c)+' g';document.getElementById('goal').textContent=x.goal.toLocaleString('pt-BR');document.getElementById('goalInput').value=x.goal;document.getElementById('remaining').textContent=t.k<=x.goal?`Restam ${f(x.goal-t.k)} kcal para a meta.`:`Meta ultrapassada em ${f(t.k-x.goal)} kcal.`;
+ document.getElementById('meals').innerHTML=meals.map((m,j)=>{let arr=x.items.map((v,i)=>({...v,i})).filter(v=>v.meal===m),sum=arr.reduce((a,v)=>a+v.k*v.g/100,0);return `<div class="meal"><div class="row"><b>${m}</b><b>${f(sum)} kcal</b></div>${arr.length?arr.map(v=>`<div class="food"><div><b>${safe(v.name)}</b><small>${f(v.k*v.g/100)} kcal · P ${f(v.p*v.g/100)} g · C ${f(v.c*v.g/100)} g</small></div><div><input type="number" min="0" value="${v.g}" data-grams="${v.i}"> g <button class="light" data-del="${v.i}">×</button></div></div>`).join(''):'<small>Nenhum alimento registrado.</small>'}<div class="add"><select data-meal="${j}">${foods.map((v,i)=>`<option value="${i}">${safe(v[0])}</option>`).join('')}</select><input type="number" min="1" value="100" data-qty="${j}"><button data-add="${j}">Adicionar</button></div></div>`}).join('');
+ document.getElementById('customMeal').innerHTML=meals.map(m=>`<option>${m}</option>`).join('');
+ document.getElementById('weight').value=store.weights[key()]||'';let hist=Object.entries(store.weights).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,5);document.getElementById('weights').textContent=hist.length?'Registros recentes: '+hist.map(([k,v])=>`${k.split('-').reverse().join('/')}: ${v} kg`).join(' · '):'Sem registros de peso.';
+}
+document.getElementById('meals').addEventListener('change',e=>{if(e.target.dataset.grams!==undefined){data().items[+e.target.dataset.grams].g=Math.max(0,+e.target.value||0);save()}});
+document.getElementById('meals').addEventListener('click',e=>{if(e.target.dataset.del!==undefined){data().items.splice(+e.target.dataset.del,1);save()}if(e.target.dataset.add!==undefined){let j=+e.target.dataset.add,fi=document.querySelector(`[data-meal="${j}"]`),q=document.querySelector(`[data-qty="${j}"]`);add(foods[+fi.value],meals[j],Math.max(1,+q.value||100))}});
+document.getElementById('search').addEventListener('input',e=>{let q=e.target.value.toLowerCase().trim(),r=document.getElementById('results');if(!q){r.innerHTML='';return}let hits=foods.map((v,i)=>({v,i})).filter(z=>z.v[0].toLowerCase().includes(q)).slice(0,12);r.innerHTML=hits.map(z=>`<div class="result"><span>${safe(z.v[0])} <small>${z.v[1]} kcal/100 g</small></span><button data-pick="${z.i}">Adicionar</button></div>`).join('')||'<small>Não encontrado. Cadastre abaixo.</small>'});
+document.getElementById('results').addEventListener('click',e=>{if(e.target.dataset.pick!==undefined)add(foods[+e.target.dataset.pick],document.getElementById('customMeal').value,100)});
+document.getElementById('saveCustom').onclick=()=>{let name=document.getElementById('customName').value.trim(),k=+document.getElementById('customKcal').value;if(!name||!k){alert('Informe o nome e as kcal por 100 g.');return}let f=[name,k,+document.getElementById('customP').value||0,+document.getElementById('customC').value||0,+document.getElementById('customF').value||0];foods.push(f);add(f,document.getElementById('customMeal').value,100);['customName','customKcal','customP','customC','customF'].forEach(id=>document.getElementById(id).value='')};
+document.getElementById('goalInput').onchange=e=>{data().goal=Math.max(800,+e.target.value||1950);save()};
+document.getElementById('prev').onclick=()=>{offset--;render()};document.getElementById('next').onclick=()=>{offset++;render()};document.getElementById('today').onclick=()=>{offset=0;render()};
+document.getElementById('clear').onclick=()=>{if(confirm('Apagar os alimentos deste dia?')){data().items=[];save()}};
+document.getElementById('saveWeight').onclick=()=>{let v=+document.getElementById('weight').value;if(v>0){store.weights[key()]=v;save()}};
+render();
+</script></html>
